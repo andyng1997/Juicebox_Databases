@@ -7,7 +7,8 @@ const {
   createPost,
   updatePost,
   getAllPosts,
-  getPostsByUser
+  getAllTags,
+  getPostsByTagName
 } = require('./index');
 
 async function dropTables() {
@@ -50,9 +51,14 @@ async function createTables() {
         active BOOLEAN DEFAULT true
       );
       CREATE TABLE tags (
-        "postId" INTEGER REFERENCES posts(id) UNIQUE,
-        "tagId" INTEGER REFERENCES tags(id) UNIQUE
-      )
+        id SERIAL PRIMARY KEY,
+        name varchar(255) UNIQUE NOT NULL
+      );
+      CREATE TABLE post_tags (
+        "postId" INTEGER REFERENCES posts(id),
+        "tagId" INTEGER REFERENCES tags(id),
+        UNIQUE ("postId", "tagId")
+      );
     `);
 
     console.log("Finished building tables!");
@@ -84,7 +90,7 @@ async function createInitialUsers() {
       name: 'Joshua',
       location: 'Upper East Side'
     });
-
+    
     console.log("Finished creating users!");
   } catch (error) {
     console.error("Error creating users!");
@@ -100,49 +106,26 @@ async function createInitialPosts() {
     await createPost({
       authorId: albert.id,
       title: "First Post",
-      content: "This is my first post. I hope I love writing blogs as much as I love writing them."
+      content: "This is my first post. I hope I love writing blogs as much as I love writing them.",
+      tags: ["#happy", "#youcandoanything"]
     });
 
     await createPost({
       authorId: sandra.id,
       title: "How does this work?",
-      content: "Seriously, does this even do anything?"
+      content: "Seriously, does this even do anything?",
+      tags: ["#happy", "#worst-day-ever"]
     });
 
     await createPost({
       authorId: glamgal.id,
       title: "Living the Glam Life",
-      content: "Do you even? I swear that half of you are posing."
+      content: "Do you even? I swear that half of you are posing.",
+      tags: ["#happy", "#youcandoanything", "#canmandoeverything"]
     });
     console.log("Finished creating posts!");
   } catch (error) {
     console.log("Error creating posts!");
-    throw error;
-  }
-}
-
-async function createTags(tagList) {
-  if (tagList.length === 0) { 
-    return; 
-  }
-
-  // need something like: $1), ($2), ($3 
-  const insertValues = tagList.map(
-    ($1, index) => `$${index + 1}`).join('), (');
-  // then we can use: (${ insertValues }) in our string template
-
-  // need something like $1, $2, $3
-  const selectValues = tagList.map(
-    (_, index) => `$${index + 1}`).join(', ');
-  // then we can use (${ selectValues }) in our string template
-
-  try {
-    // insert the tags, doing nothing on conflict
-    // returning nothing, we'll query after
-
-    // select all tags where the name is in our taglist
-    // return the rows from the query
-  } catch (error) {
     throw error;
   }
 }
@@ -187,11 +170,25 @@ async function testDB() {
     });
     console.log("Result:", updatePostResult);
 
+    console.log("Calling updatePost on posts[1], only updating tags");
+    const updatePostTagsResult = await updatePost(posts[1].id, {
+      tags: ["#youcandoanything", "#redfish", "#bluefish"]
+    });
+    console.log("Result:", updatePostTagsResult);
+
     console.log("Calling getUserById with 1");
     const albert = await getUserById(1);
     console.log("Result:", albert);
 
-    console.log("Finished database tests!");  
+    console.log("Calling getAllTags");
+    const allTags = await getAllTags();
+    console.log("Result:", allTags);
+
+    console.log("Calling getPostsByTagName with #happy");
+    const postsWithHappy = await getPostsByTagName("#happy");
+    console.log("Result:", postsWithHappy);
+
+    console.log("Finished database tests!");
   } catch (error) {
     console.log("Error during testDB");
     throw error;

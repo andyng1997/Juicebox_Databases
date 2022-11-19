@@ -10,12 +10,11 @@ usersRouter.use((req, res, next) => {
   next(); // THIS IS DIFFERENT
 });
 
-usersRouter.get('/', async (req, res, next) => {
-  const users = await getAllUsers();
-  console.log(users);
-  console.log("A request is being made to /users");
-
-  res.send({ message: 'hello from /users!' });
+usersRouter.get('/', async (req, res) => {
+  const users= await getAllUsers();
+  res.send({
+    users
+  });
 });
 
 module.exports = usersRouter;
