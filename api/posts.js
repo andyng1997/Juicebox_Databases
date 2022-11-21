@@ -13,13 +13,19 @@ const {
 postsRouter.get('/', async (req, res, next) => {
   try {
     const allPosts = await getAllPosts();
+
     const posts = allPosts.filter(post => {
+      // the post is active, doesn't matter who it belongs to
       if (post.active) {
         return true;
       }
+    
+      // the post is not active, but it belogs to the current user
       if (req.user && post.author.id === req.user.id) {
         return true;
       }
+    
+      // none of the above are true
       return false;
     });
   
@@ -33,6 +39,7 @@ postsRouter.get('/', async (req, res, next) => {
 
 postsRouter.post('/', requireUser, async (req, res, next) => {
   const { title, content, tags = "" } = req.body;
+
   const tagArr = tags.trim().split(/\s+/)
   const postData = {};
 
@@ -63,6 +70,7 @@ postsRouter.post('/', requireUser, async (req, res, next) => {
 postsRouter.patch('/:postId', requireUser, async (req, res, next) => {
   const { postId } = req.params;
   const { title, content, tags } = req.body;
+
   const updateFields = {};
 
   if (tags && tags.length > 0) {
@@ -103,9 +111,10 @@ postsRouter.delete('/:postId', requireUser, async (req, res, next) => {
 
       res.send({ post: updatedPost });
     } else {
+      // if there was a post, throw UnauthorizedUserError, otherwise throw PostNotFoundError
       next(post ? { 
         name: "UnauthorizedUserError",
-        message: "You cannot delete a post that is not yours"
+        message: "You cannot delete a post which is not yours"
       } : {
         name: "PostNotFoundError",
         message: "That post does not exist"
